@@ -38,11 +38,11 @@
   .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
   .err { color: var(--danger); font-size: 12px; font-family: 'DM Mono', monospace; margin-top: 8px; }
   .hidden { display: none !important; }
-  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1rem; }
+  .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 1rem; }
   .metric { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
   .metric .lbl { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
   .metric .val { font-size: 18px; font-weight: 600; color: var(--text); }
-  .modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 1rem; }
+  .modes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 1rem; }
   .mode-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; font-size: 12px; font-family: 'Syne', sans-serif; font-weight: 600; cursor: pointer; color: var(--muted); text-align: center; transition: all 0.15s; }
   .mode-btn:hover { color: var(--text); border-color: var(--muted); }
   .mode-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(127,255,110,0.06); }
@@ -71,8 +71,8 @@
   .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   @media(max-width:500px) {
     .app { padding: 1rem; }
-    .metrics { grid-template-columns: repeat(2, 1fr); }
-    .modes { grid-template-columns: repeat(2, 1fr); }
+    .metrics { grid-template-columns: repeat(3, 1fr); }
+    .modes { grid-template-columns: repeat(3, 1fr); }
   }
 </style>
 </head>
@@ -115,6 +115,7 @@
       <button class="mode-btn" id="m-waiver" onclick="setMode('waiver')">↔ Waivers</button>
       <button class="mode-btn" id="m-lineup" onclick="setMode('lineup')">✓ Lineup</button>
       <button class="mode-btn" id="m-draft" onclick="setMode('draft')">◈ Draft</button>
+      <button class="mode-btn" id="m-keeper" onclick="setMode('keeper')">🔒 Keeper</button>
     </div>
     <div class="chat">
       <div class="messages" id="msgs"></div>
@@ -240,6 +241,21 @@ function getMyPlayers() {
     return `${p.position||'?'}: ${p.full_name||id} (${p.team||'FA'})${p.injury_status?' ['+p.injury_status+']':''}`;
   });
 }
+const KEEPER_PROTOCOL = `KEEPER PROTOCOL RULES:
+- Maximum of 3 keepers per owner (0 to 3).
+- A kept player slots into the draft ONE ROUND PRIOR to where he was drafted the previous season.
+- If a kept player was drafted in Round 1, he continues to slot in at Round 1.
+- If an owner has an extra pick in the slotted round, the player slots into the first pick of that round.
+- If an owner keeps 2 players drafted in the same round, one slots into the first pick of the next successive available round (only 1 kept player per round per owner).
+- If an owner has no pick in the slotted round, the player slots into the first available pick in the first successive available round.
+- If a kept player was undrafted, he slots into the first pick of the owner's last available round.
+- Rookies are immediately available in Round 1 regardless of keeper protocol.
+
+THE JUSTIN JEFFERSON ADDENDUM:
+- If a player is kept THIS season more than one round below where they were drafted the PREVIOUS season, then NEXT season that player must default to the draft position they would have been kept at had the owner owned that draft slot.
+- If that draft slot is unavailable, the player may NOT be kept by that owner.
+- A player may not fall more than one round below their protocol-defined keeper round for two consecutive years, even if traded.`;
+
 function buildSystem() {
   const l = S.leagueData, r = S.myRoster;
   const scoring = l?.scoring_settings?.rec?(l.scoring_settings.rec===0.5?'Half PPR':'PPR'):'Standard';
@@ -261,12 +277,14 @@ ${bench.join('\n')||'(none)'}
 TOP FREE AGENTS (${S.freeAgents.length} total):
 ${fa.join('\n')}
 
-MODE: ${S.mode}`;
+MODE: ${S.mode}
+
+${S.mode === 'keeper' ? KEEPER_PROTOCOL : ''}`;
 }
 
 function setMode(m) {
   S.mode = m;
-  ['general','waiver','lineup','draft'].forEach(x => document.getElementById('m-'+x).classList.toggle('active', x===m));
+  ['general','waiver','lineup','draft','keeper'].forEach(x => document.getElementById('m-'+x).classList.toggle('active', x===m));
   updateQbar();
 }
 function updateQbar() {
@@ -274,7 +292,8 @@ function updateQbar() {
     general:['How is my team looking?','Trade targets?','Playoff chances?'],
     waiver:['Best RBs on waivers','Best streamers this week','Who should I drop?'],
     lineup:['Who should I start?','Any injury concerns?','Best matchups?'],
-    draft:['Who to target next?','Best value picks?','Positions to prioritize?']
+    draft:['Who to target next?','Best value picks?','Positions to prioritize?'],
+    keeper:['Who should I keep?','Keeper value analysis','Explain the Jefferson addendum']
   };
   document.getElementById('qbar').innerHTML = (map[S.mode]||[]).map(t=>`<button class="qbtn" onclick="qs('${t}')">${t}</button>`).join('');
 }
@@ -302,7 +321,7 @@ async function send() {
   S.msgs.push({role:'ai',text:'thinking...',thinking:true});
   renderMsgs();
   try {
-    const history = S.msgs.slice(0,tidx).filter(m=>!m.thinking).slice(-8);
+    const history = S.msgs.slice(0,tidx).filter(m=>!m.thinking).slice(-4);
     const data = await callClaude({
       model: 'claude-sonnet-4-6',
       max_tokens: 1000,
