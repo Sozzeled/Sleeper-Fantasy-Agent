@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sleeper Fantasy Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2127;
+    --border: #2a2d35;
+    --accent: #7fff6e;
+    --text: #eef0f4;
+    --muted: #7a7f8e;
+    --danger: #ff6b6b;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; }
+  .app { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
+  header { margin-bottom: 2rem; }
+  .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .logo-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .tagline { font-size: 13px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .card-label { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+  .input-row { display: flex; gap: 8px; }
+  input, select { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 14px; color: var(--text); font-family: 'Syne', sans-serif; outline: none; transition: border-color 0.2s; width: 100%; }
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+  .btn { background: var(--accent); color: #0e0f11; border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; font-weight: 600; font-family: 'Syne', sans-serif; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.88; }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-family: 'Syne', sans-serif; cursor: pointer; }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+  .err { color: var(--danger); font-size: 12px; font-family: 'DM Mono', monospace; margin-top: 8px; }
+  .hidden { display: none !important; }
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1rem; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .metric .lbl { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric .val { font-size: 18px; font-weight: 600; color: var(--text); }
+  .modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 1rem; }
+  .mode-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; font-size: 12px; font-family: 'Syne', sans-serif; font-weight: 600; cursor: pointer; color: var(--muted); text-align: center; transition: all 0.15s; }
+  .mode-btn:hover { color: var(--text); border-color: var(--muted); }
+  .mode-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(127,255,110,0.06); }
+  .chat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .messages { padding: 1.25rem; min-height: 200px; max-height: 460px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .msg { display: flex; gap: 10px; align-items: flex-start; }
+  .msg.user { flex-direction: row-reverse; }
+  .av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; }
+  .msg.user .av { background: var(--accent); color: #0e0f11; border-color: var(--accent); }
+  .bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 14px; line-height: 1.65; color: var(--text); max-width: 85%; white-space: pre-wrap; word-break: break-word; }
+  .msg.user .bubble { background: rgba(127,255,110,0.08); border-color: rgba(127,255,110,0.2); }
+  .bubble.thinking { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 13px; }
+  .quick-bar { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 12px; border-top: 1px solid var(--border); }
+  .qbtn { font-size: 12px; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; cursor: pointer; background: transparent; color: var(--muted); font-family: 'Syne', sans-serif; white-space: nowrap; transition: all 0.15s; }
+  .qbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .chat-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
+  .chat-input input { flex: 1; }
+  .send-btn { background: var(--accent); color: #0e0f11; border: none; border-radius: 8px; width: 38px; height: 38px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s; }
+  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .send-btn:hover:not(:disabled) { opacity: 0.85; }
+  .live-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; font-family: 'DM Mono', monospace; color: var(--muted); }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.5} }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  @media(max-width:500px) {
+    .app { padding: 1rem; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .modes { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🏆</div>
+      <h1>Sleeper Fantasy Agent</h1>
+    </div>
+    <div class="tagline">// AI-powered fantasy football advisor</div>
+  </header>
+
+  <div id="setup">
+    <div class="card">
+      <div class="card-label">Sleeper Username</div>
+      <div class="input-row">
+        <input type="text" id="un" placeholder="e.g. sozzeled" onkeydown="if(event.key==='Enter')loadUser()" />
+        <button class="btn" id="load-btn" onclick="loadUser()">Load</button>
+      </div>
+      <div id="un-err" class="err"></div>
+    </div>
+    <div class="card hidden" id="league-card">
+      <div class="card-label">Select League</div>
+      <div class="input-row">
+        <select id="league-sel" style="flex:1;"></select>
+        <button class="btn" onclick="loadLeague()">Go</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="agent" class="hidden">
+    <div class="top-bar">
+      <div class="live-badge"><div class="live-dot"></div><span id="league-name-label">Live</span></div>
+      <button class="btn-ghost" onclick="resetAll()">↩ Switch league</button>
+    </div>
+    <div class="metrics" id="metrics"></div>
+    <div class="modes">
+      <button class="mode-btn active" id="m-general" onclick="setMode('general')">⚡ General</button>
+      <button class="mode-btn" id="m-waiver" onclick="setMode('waiver')">↔ Waivers</button>
+      <button class="mode-btn" id="m-lineup" onclick="setMode('lineup')">✓ Lineup</button>
+      <button class="mode-btn" id="m-draft" onclick="setMode('draft')">◈ Draft</button>
+    </div>
+    <div class="chat">
+      <div class="messages" id="msgs"></div>
+      <div class="quick-bar" id="qbar"></div>
+      <div class="chat-input">
+        <input type="text" id="cin" placeholder="Ask anything about your team..." onkeydown="if(event.key==='Enter')send()" />
+        <button class="send-btn" id="sbtn" onclick="send()">↑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SLEEPER_BASE = 'https://api.sleeper.app/v1';
+const CLAUDE_FN = '/.netlify/functions/claude';
+
+const S = {
+  userId: null, username: null,
+  leagues: [], leagueId: null, leagueData: null,
+  rosters: [], userMap: {}, myRoster: null, myTeamName: '',
+  players: null, freeAgents: [],
+  mode: 'general', msgs: []
+};
+
+async function sleeper(path) {
+  const res = await fetch(SLEEPER_BASE + path);
+  if (!res.ok) throw new Error('Sleeper API error: ' + res.status);
+  return res.json();
+}
+
+async function callClaude(payload) {
+  const res = await fetch(CLAUDE_FN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
+  return data;
+}
+
+async function loadUser() {
+  const un = document.getElementById('un').value.trim();
+  if (!un) return;
+  setErr('');
+  setBtnState('load-btn', true, 'Loading...');
+  try {
+    const user = await sleeper('/user/' + un);
+    if (!user?.user_id) throw new Error('User not found.');
+    S.userId = user.user_id;
+    S.username = user.display_name || un;
+    const leagues = await sleeper('/user/' + S.userId + '/leagues/nfl/2026');
+    if (!leagues?.length) throw new Error('No NFL 2026 leagues found.');
+    S.leagues = leagues;
+    const sel = document.getElementById('league-sel');
+    sel.innerHTML = leagues.map(l => `<option value="${l.league_id}">${l.name}</option>`).join('');
+    document.getElementById('league-card').classList.remove('hidden');
+  } catch(e) { setErr(e.message); }
+  setBtnState('load-btn', false, 'Load');
+}
+
+async function loadLeague() {
+  const lid = document.getElementById('league-sel').value;
+  S.leagueId = lid;
+  S.leagueData = S.leagues.find(l => l.league_id === lid);
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('agent').classList.remove('hidden');
+  document.getElementById('league-name-label').textContent = S.leagueData?.name || 'Live';
+  S.msgs = [];
+  addMsg('ai', 'Loading your roster and league data...');
+  try {
+    const [rosters, users] = await Promise.all([
+      sleeper('/league/' + lid + '/rosters'),
+      sleeper('/league/' + lid + '/users')
+    ]);
+    S.rosters = rosters;
+    users.forEach(u => S.userMap[u.user_id] = u);
+    S.myRoster = rosters.find(r => r.owner_id === S.userId) || rosters[0];
+    const mu = S.userMap[S.myRoster?.owner_id] || {};
+    S.myTeamName = mu.metadata?.team_name || mu.display_name || S.username;
+
+    if (!S.players) {
+      addMsg('ai', 'Fetching NFL player database — just a moment...');
+      S.players = await sleeper('/players/nfl');
+    }
+
+    const rostered = new Set();
+    rosters.forEach(r => (r.players||[]).forEach(p => rostered.add(p)));
+    S.freeAgents = Object.values(S.players)
+      .filter(p => p.active && ['QB','RB','WR','TE','K','DEF'].includes(p.position) && !rostered.has(p.player_id))
+      .sort((a,b) => (a.search_rank||9999)-(b.search_rank||9999))
+      .slice(0, 150);
+
+    renderMetrics();
+    S.msgs = [];
+    const scoring = S.leagueData?.scoring_settings?.rec ? (S.leagueData.scoring_settings.rec===0.5?'Half PPR':'PPR') : 'Standard';
+    addMsg('ai', `All loaded! ${scoring} league — ${S.freeAgents.length} free agents available. Ask me about waivers, your lineup, trade targets, or draft strategy.`);
+    updateQbar();
+  } catch(e) { addMsg('ai', 'Error: ' + e.message); }
+}
+
+function renderMetrics() {
+  const r = S.myRoster, l = S.leagueData;
+  const scoring = l?.scoring_settings?.rec ? (l.scoring_settings.rec===0.5?'½PPR':'PPR') : 'Std';
+  const pts = r?.settings?.fpts != null ? ((r.settings.fpts||0)+(r.settings.fpts_decimal||0)/100).toFixed(1) : '—';
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><div class="lbl">Team</div><div class="val" style="font-size:13px;margin-top:2px;">${S.myTeamName}</div></div>
+    <div class="metric"><div class="lbl">Record</div><div class="val">${r?.settings?.wins??'—'}-${r?.settings?.losses??'—'}</div></div>
+    <div class="metric"><div class="lbl">Pts For</div><div class="val">${pts}</div></div>
+    <div class="metric"><div class="lbl">Format</div><div class="val" style="font-size:14px;">${scoring}</div></div>
+  `;
+}
+
+function getStarters() {
+  return (S.myRoster?.starters||[]).map(id => {
+    const p = S.players?.[id]||{};
+    return `${p.position||'?'}: ${p.full_name||id} (${p.team||'FA'})${p.injury_status?' ['+p.injury_status+']':''}`;
+  });
+}
+function getMyPlayers() {
+  return (S.myRoster?.players||[]).map(id => {
+    const p = S.players?.[id]||{};
+    return `${p.position||'?'}: ${p.full_name||id} (${p.team||'FA'})${p.injury_status?' ['+p.injury_status+']':''}`;
+  });
+}
+function buildSystem() {
+  const l = S.leagueData, r = S.myRoster;
+  const scoring = l?.scoring_settings?.rec?(l.scoring_settings.rec===0.5?'Half PPR':'PPR'):'Standard';
+  const starters = getStarters();
+  const all = getMyPlayers();
+  const bench = all.filter(p=>!starters.includes(p));
+  const fa = S.freeAgents.slice(0,50).map(p=>`${p.position}: ${p.full_name} (${p.team||'FA'})${p.injury_status?' ['+p.injury_status+']':''}`);
+  return `You are an expert fantasy football analyst with live Sleeper league data. Be concise, specific, actionable. Name players directly. Use web_search for current injury news, rankings, snap counts, matchup data.
+
+LEAGUE: ${l?.name} | Season: 2026 | Scoring: ${scoring} | Teams: ${l?.total_rosters}
+MY TEAM: ${S.myTeamName} | Record: ${r?.settings?.wins||0}W-${r?.settings?.losses||0}L | PF: ${((r?.settings?.fpts||0)+(r?.settings?.fpts_decimal||0)/100).toFixed(1)}
+
+MY STARTERS:
+${starters.join('\n')||'(none)'}
+
+MY BENCH:
+${bench.join('\n')||'(none)'}
+
+TOP FREE AGENTS (${S.freeAgents.length} total):
+${fa.join('\n')}
+
+MODE: ${S.mode}`;
+}
+
+function setMode(m) {
+  S.mode = m;
+  ['general','waiver','lineup','draft'].forEach(x => document.getElementById('m-'+x).classList.toggle('active', x===m));
+  updateQbar();
+}
+function updateQbar() {
+  const map = {
+    general:['How is my team looking?','Trade targets?','Playoff chances?'],
+    waiver:['Best RBs on waivers','Best streamers this week','Who should I drop?'],
+    lineup:['Who should I start?','Any injury concerns?','Best matchups?'],
+    draft:['Who to target next?','Best value picks?','Positions to prioritize?']
+  };
+  document.getElementById('qbar').innerHTML = (map[S.mode]||[]).map(t=>`<button class="qbtn" onclick="qs('${t}')">${t}</button>`).join('');
+}
+
+function addMsg(role, text) { S.msgs.push({role,text}); renderMsgs(); }
+function renderMsgs() {
+  const el = document.getElementById('msgs');
+  el.innerHTML = S.msgs.map(m=>`
+    <div class="msg ${m.role}">
+      <div class="av">${m.role==='ai'?'AI':'Me'}</div>
+      <div class="bubble${m.thinking?' thinking':''}">${m.text}</div>
+    </div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+function qs(t){document.getElementById('cin').value=t;send();}
+
+async function send() {
+  const inp = document.getElementById('cin');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value='';
+  addMsg('user', text);
+  document.getElementById('sbtn').disabled=true;
+  const tidx = S.msgs.length;
+  S.msgs.push({role:'ai',text:'thinking...',thinking:true});
+  renderMsgs();
+  try {
+    const history = S.msgs.slice(0,tidx).filter(m=>!m.thinking).slice(-8);
+    const data = await callClaude({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      system: buildSystem(),
+      tools: [{type:'web_search_20250305',name:'web_search'}],
+      messages: [
+        ...history.map(m=>({role:m.role==='ai'?'assistant':'user',content:m.text})),
+        {role:'user',content:text}
+      ]
+    });
+    const reply = data.content?.map(b=>b.text||'').filter(Boolean).join('')||'No response.';
+    S.msgs[tidx] = {role:'ai',text:reply};
+  } catch(e) {
+    S.msgs[tidx] = {role:'ai',text:'Error: '+e.message};
+  }
+  renderMsgs();
+  document.getElementById('sbtn').disabled=false;
+  inp.focus();
+}
+
+function resetAll() {
+  document.getElementById('setup').classList.remove('hidden');
+  document.getElementById('agent').classList.add('hidden');
+  S.msgs=[];
+}
+function setBtnState(id,dis,lbl){const b=document.getElementById(id);if(!b)return;b.disabled=dis;if(lbl)b.textContent=lbl;}
+function setErr(msg){document.getElementById('un-err').textContent=msg;}
+</script>
+</body>
+</html>
