@@ -283,9 +283,14 @@ ${S.mode === 'keeper' ? KEEPER_PROTOCOL : ''}`;
 }
 
 function setMode(m) {
+  const prev = S.mode;
   S.mode = m;
   ['general','waiver','lineup','draft','keeper'].forEach(x => document.getElementById('m-'+x).classList.toggle('active', x===m));
   updateQbar();
+  if (prev !== m && S.msgs.length > 0) {
+    const labels = {general:'general team advice',waiver:'waiver wire pickups',lineup:'lineup decisions',draft:'draft strategy',keeper:'keeper decisions'};
+    addMsg('ai', 'Switched to ' + labels[m] + ' mode. What would you like to know?');
+  }
 }
 function updateQbar() {
   const map = {
